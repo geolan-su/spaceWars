@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
  
     // please provide a path for your image
     //${workspaceFolder}/assets/Untitled
-    surface = IMG_Load("/home/Pictures/rubric.png");
+    surface = IMG_Load("spaceship.png");
  
     // loads image to our graphics hardware memory.
     SDL_Texture* tex = SDL_CreateTextureFromSurface(rend, surface);

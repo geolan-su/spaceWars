@@ -3,6 +3,7 @@ main file that will be calling the draw functions and initializing
 the rendering of everything cool in the program
 */
 //gcc main.c -o main -lSDL2 -lSDL2_image 
+//bug - rect is NOT passed by reference
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_timer.h>
@@ -28,7 +29,7 @@ typedef struct {
 } enemy;
 
 typedef struct {
-
+    int x, y;
 } rock;
 
 typedef struct {
@@ -37,19 +38,19 @@ typedef struct {
 
 //#include <obama.h>
 void initialize(SDL_Window* window, SDL_Renderer* renderer, 
-SDL_Surface* surface, SDL_Texture* texture, SDL_Rect rect,
-enemy wave[][10], int speed);
+SDL_Surface* surface, SDL_Texture* texture, SDL_Rect* rect,
+enemy wave[][10], int* speed);
 
 void draw();
 
 void ioControl(SDL_Window* window, SDL_Renderer* renderer, 
-SDL_Surface* surface, SDL_Texture* texture, SDL_Rect rect,
-enemy wave[][10], int speed);
+SDL_Surface* surface, SDL_Texture* texture, SDL_Rect* rect,
+enemy wave[][10], int* speed, SDL_Event* event);
 
 void destroyer(SDL_Window* window, SDL_Renderer*
 renderer, SDL_Texture* texture);
 
-int main(void) { //int argc, char* argv[] were parameters
+int main(int argc, char* argv[]) { //int argc, char* argv[] were parameters
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Surface* surface;
@@ -57,13 +58,14 @@ int main(void) { //int argc, char* argv[] were parameters
     SDL_Rect rect;
     enemy wave[5][10];
     int speed;
+    SDL_Event event;
 
-    initialize(window, renderer, surface, texture, rect, wave, speed);
+    initialize(window, renderer, surface, texture, &rect, wave, &speed);
+    printf("Width in main is %d", rect.w);
+    ioControl(window, renderer, surface, texture, &rect, wave, &speed, &event);
+    destroyer(window, renderer, texture);
 
-    ioControl(window, renderer, surface, texture, rect, wave, speed);
-
-
-
+    SDL_Quit();
     return 0;
 }
 
@@ -71,8 +73,8 @@ int main(void) { //int argc, char* argv[] were parameters
 //reference
 //each wave slightly lower and slightly faster
 void initialize(SDL_Window* window, SDL_Renderer* renderer, 
-SDL_Surface* surface, SDL_Texture* texture, SDL_Rect rect,
-enemy wave[][10], int speed) {
+SDL_Surface* surface, SDL_Texture* texture, SDL_Rect* rect,
+enemy wave[][10], int* speed) {
     
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -86,21 +88,24 @@ enemy wave[][10], int speed) {
 
     Uint32 render_flags = SDL_RENDERER_ACCELERATED;
 
-    surface = IMG_Load("${workspaceFolder}/assets/Untitled.png");
+    renderer = SDL_CreateRenderer(window, -1, render_flags);
+
+    surface = IMG_Load("spaceship.png");
 
     texture = SDL_CreateTextureFromSurface(renderer, surface);
 
     SDL_FreeSurface(surface);
 
-    SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+    SDL_QueryTexture(texture, NULL, NULL, &(*rect).w, &(*rect).h);
 
-    rect.w /= 5;
-    rect.h /= 5;
+    (*rect).w /= 5;
+    (*rect).h /= 5;
 
-    rect.x = (1024 - rect.w) / 2;
-    rect.y = (768 - rect.h) / 2;
+    (*rect).x = (1024 - (*rect).w) / 2;
+    (*rect).y = (768 - (*rect).h) / 2;
 
-    speed = 300;
+    *speed = 300;
+    printf("width after init is %d", (*rect).w);
     }
 
 void draw() {
@@ -108,27 +113,25 @@ void draw() {
 }
 
 void ioControl(SDL_Window* window, SDL_Renderer* renderer, 
-SDL_Surface* surface, SDL_Texture* texture, SDL_Rect rect,
-enemy wave[][10], int speed) {
+SDL_Surface* surface, SDL_Texture* texture, SDL_Rect* rect,
+enemy wave[][10], int* speed, SDL_Event* event) {
     int stop = 0;
-
     while(!stop) {
 
-        SDL_Event event;
-        while(SDL_PollEvent(&event)) {
-            switch(event.type) {
+        while(SDL_PollEvent(&(*event))) {
+            switch((*event).type) {
             case SDL_QUIT:
                 stop = 1;
                 break;
             case SDL_KEYDOWN:
-                switch(event.key.keysym.scancode) {
+                switch((*event).key.keysym.scancode) {
                 case SDL_SCANCODE_A:
                 case SDL_SCANCODE_LEFT:
-                    rect.x -= speed / 30;
+                    (*rect).x -= *speed / 30;
                     break;
                 case SDL_SCANCODE_D:
                 case SDL_SCANCODE_RIGHT:
-                    rect.x += speed / 30;
+                    (*rect).x += *speed / 30;
                     break;
                 default:
                     break;
@@ -136,31 +139,31 @@ enemy wave[][10], int speed) {
             }
         }
         //right bounds
-        if(rect.x + rect.w > 1024) {
-            rect.x = 1024 - rect.w;
+        if((*rect).x + (*rect).w > 1024) {
+            (*rect).x = 1024 - (*rect).w;
         }
         //left bounds
-        if(rect.x < 0) {
-            rect.x = 0;
+        if((*rect).x < 0) {
+            (*rect).x = 0;
         }
         // bottom boundary
-        if (rect.y + rect.h > 768) {
-            rect.y = 768 - rect.h;
+        if ((*rect).y + (*rect).h > 768) {
+            (*rect).y = 768 - (*rect).h;
         }
         // upper boundary
-        if (rect.y < 0) {
-            rect.y = 0;
+        if ((*rect).y < 0) {
+            (*rect).y = 0;
         }
         //screen clear
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
+        SDL_RenderCopy(renderer, texture, NULL, &(*rect));
 
         //multiple render or something
         SDL_RenderPresent(renderer);
 
         //60fps gamer
         SDL_Delay(1000 / 61);
-    }
+    } 
 }
 
 void destroyer(SDL_Window* window, SDL_Renderer*
@@ -169,5 +172,6 @@ renderer, SDL_Texture* texture) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
+
 
 

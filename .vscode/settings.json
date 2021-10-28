@@ -1,3 +1,13 @@
 {
-    "c-cpp-compile-run.run-args": "-I/usr/include/SDL2/"
+    "c-cpp-compile-run.run-args": "-I/usr/include/SDL2/",
+    "files.associations": {
+        "array": "c",
+        "deque": "c",
+        "list": "c",
+        "string": "c",
+        "vector": "c",
+        "string_view": "c",
+        "*.tcc": "c",
+        "fstream": "c"
+    }
 }
