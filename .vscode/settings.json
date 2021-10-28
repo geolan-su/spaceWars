@@ -1,0 +1,3 @@
+{
+    "c-cpp-compile-run.run-args": "-I/usr/include/SDL2/"
+}

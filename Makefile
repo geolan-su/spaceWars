@@ -1,0 +1,2 @@
+output: example.o 
+	gcc 	
