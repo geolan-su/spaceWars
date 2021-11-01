@@ -1,6 +1,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_timer.h>
+#include <time.h>
+#include <stdlib.h>
+
 //const SHIP_HEIGHT =;
 //const SHIP_WIDTH =;
 const int WINDOW_WIDTH = 1024;
@@ -14,6 +17,10 @@ const int PLAYER_H;
 
 int waveDirection = 0;
 int GAMEOVER = 0;
+int godmode = 1;
+int frame = 0;
+int delay = 0;
+int enemyDelay = 0;
 
 //makes the player ship
 typedef struct {
@@ -44,6 +51,7 @@ typedef struct {
 } wave;
 
 typedef struct {
+    //make a grid of rocks
     int x, y;
     int destructionGrid[5][5];
     SDL_Rect rect;
@@ -62,7 +70,7 @@ void initializeWave(wave w);
 void initializeEnemy(enemy* e, int type);
 int detectColision(SDL_Rect a, SDL_Rect b);
 void playerLaser(player* steve, laser playerLasers[], size_t pLSize ,SDL_Texture* laserTexture);
-void enemyLaser(laser* x, enemy* bad);
+void enemyLaser(enemy* bad, laser enemyLasers[500], size_t eLSize, SDL_Texture* laserTexture);
 void manageBounds(SDL_Rect* r);
 void destroyEnemy(enemy* x);
 void shiftWaveDown(wave* w);
@@ -128,8 +136,8 @@ int main(int argc, char *argv[])
     //initializes bullets
     //laser* playerLasers = malloc(100 * sizeof(laser));
     laser playerLasers[100];
-    laser* enemyLasers = (laser*) malloc (100 * sizeof(laser));
-    rock rocks[3];
+    laser enemyLasers[500];
+    rock rocks[3][8][8];
 
     SDL_Surface* A1surface = IMG_Load("alien.png");
     SDL_Surface* A2surface = IMG_Load("alien2.png");
@@ -193,8 +201,9 @@ int main(int argc, char *argv[])
         yPos += 60;
     }
     xPos = 100;
+    yPos = 5;
     //assigns and queries rocks or something idk
-    for(int i = 0; i<sizeof(rocks)/sizeof(rocks[0]); i++) {
+    /*for(int i = 0; i<sizeof(rocks)/sizeof(rocks[0]); i++) {
         SDL_QueryTexture(rockTexture, NULL, NULL, &rocks[i].rect.w, &rocks[i].rect.h);
         rocks[i].rect.w /= 4;
         rocks[i].rect.h /= 4;
@@ -202,6 +211,23 @@ int main(int argc, char *argv[])
         rocks[i].rect.x = (1024 - rocks[i].rect.w) * 1 / 20 + xPos;
         rocks[i].rect.y = (768 - rocks[i].rect.h) * 7 / 10;
         xPos += 300;
+    }*/ 
+    for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
+        for(int r = 0; r<sizeof(rocks[0])/sizeof(rocks[0][0]); r++) {
+            for(int c = 0; c< sizeof(rocks[0][0])/sizeof(rocks[0][0][0]); c++) {
+                SDL_QueryTexture(rockTexture, NULL, NULL, &rocks[i][r][c].rect.w, &rocks[i][r][c].rect.h);
+                rocks[i][r][c].rect.w /= 144;
+                rocks[i][r][c].rect.h /= 144;
+
+                rocks[i][r][c].rect.x = (1024 - rocks[i][r][c].rect.w) * 1 / 20 + xPos;
+                rocks[i][r][c].rect.y = (768 - rocks[i][r][c].rect.h) * 7 / 10 + yPos;
+                xPos +=10;
+            }
+            yPos += 10;
+            xPos -= 80;
+        }
+        xPos += 300;
+        yPos = 5;
     }
 
 
@@ -215,6 +241,18 @@ int main(int argc, char *argv[])
         playerLasers[i].rect.x = 69000;
         playerLasers[i].rect.y = 69000;
         playerLasers[i].refill = 0;
+
+    }
+
+    for(int i = 0; i<sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
+        SDL_QueryTexture(laserTexture, NULL, NULL, &enemyLasers[i].rect.w, &enemyLasers[i].rect.h);    
+        enemyLasers[i].velocity = 1;
+        enemyLasers[i].damage = 10;
+        enemyLasers[i].rect.w /= 16;
+        enemyLasers[i].rect.h /= 16;
+        enemyLasers[i].rect.x = 69000;
+        enemyLasers[i].rect.y = 69000;
+        enemyLasers[i].refill = 0;
 
     }
     
@@ -252,14 +290,36 @@ int main(int argc, char *argv[])
                         //until reaching border
                         //how can I manage bullet data?
                         //printf("initial steve x: %i", steve.rect.x);
-                        playerLaser(&steve, playerLasers, sizeof(playerLasers), laserTexture);
+                        if(!delay) {
+                            playerLaser(&steve, playerLasers, sizeof(playerLasers), laserTexture);
+                            delay = 1;
+                        }
                         //printf("%i", playerLasers[0].rect.x);
                         break;
+
                 }
                     default:
                         break;
                 }
             }
+        }
+
+        frame += 1;
+        if(frame % 20 == 0) {
+            delay = 0;
+        }
+        if(frame % 60 == 0) {
+            enemyDelay = 0;
+        }
+        srand(time(NULL));
+
+        
+
+        if(!enemyDelay) {
+            int x = rand() % (sizeof(w.enemies)/sizeof(w.enemies[0]));
+            int y = rand() % (sizeof(w.enemies[0])/sizeof(w.enemies[0][0]));
+            enemyLaser(&w.enemies[x][y], enemyLasers, sizeof(enemyLasers), laserTexture);
+            enemyDelay = 1;
         }
         
         if(GAMEOVER) {
@@ -272,7 +332,6 @@ int main(int argc, char *argv[])
     
             //kills the lasers
             //free(playerLasers);
-            free(enemyLasers);
 
             // rectroy renderer
             SDL_DestroyRenderer(renderer);
@@ -285,6 +344,8 @@ int main(int argc, char *argv[])
  
             return 0;
         }
+
+
         //bro make a bounds function
         // right boundary
         if (steve.rect.x + steve.rect.w > 1024)
@@ -328,13 +389,19 @@ int main(int argc, char *argv[])
                     
             }
         }
+        //make player lasers go up
         for(int i = 0; i < sizeof(playerLasers)/sizeof(playerLasers[0]); i++) {
             playerLasers[i].rect.y -= 3;
         }
+        //make enemy lasers go down
+        for(int i = 0; i < sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
+            enemyLasers[i].rect.y += 3;
+            //printf("%d", enemyLasers[i].velocity);
+        }
+
         for(int r = 0; r < sizeof(w.enemies)/sizeof(w.enemies[0]); r++) {
             for(int c = 0; c < sizeof(w.enemies[0])/sizeof(w.enemies[0][0]); c++) {
                 for(int z = 0; z < sizeof(playerLasers)/sizeof(playerLasers[0]); z++) {
-                    for(int h = 0; h<sizeof(rocks)/sizeof(rocks[0]); h++) {
 
                         //SDL_CollidePixel
                         //player hits enemy
@@ -343,22 +410,46 @@ int main(int argc, char *argv[])
                             playerLasers[z].rect.x = 69000;
                         }
                         //laser hits rock
-                        if(SDL_HasIntersection(&rocks[h].rect, &playerLasers[z].rect)) {
+                        /*if(SDL_HasIntersection(&rocks[h].rect, &playerLasers[z].rect)) {
                             playerLasers[z].rect.x = 69000;
                         }
                         //enemy reach rock
                         if(SDL_HasIntersection(&w.enemies[r][c].rect, &rocks[h].rect) && !w.enemies[r][c].dead) {
                             GAMEOVER = 1;
-                        } 
+                        } */
                         if(w.enemies[r][c].hp <= 0) {
                             w.enemies[r][c].dead = 1;
                         }
-                    }
-                    
-
                 }
             }
         }
+
+        for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
+            for(int r = 0; r<sizeof(rocks[0])/sizeof(rocks[0][0]); r++) {
+                for(int c = 0; c< sizeof(rocks[0][0])/sizeof(rocks[0][0][0]); c++) {
+                    for(int j = 0; j < sizeof(playerLasers)/sizeof(playerLasers[0]); j++) {
+
+                        if(SDL_HasIntersection(&rocks[i][r][c].rect, &playerLasers[j].rect)) {
+                            playerLasers[j].rect.x = 69000;
+                            rocks[i][r][c].rect.x = 69000;
+                        }
+
+                    }
+                }
+            }
+        }       
+        for(int i = 0; i<sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
+            if(SDL_HasIntersection(&steve.rect, &enemyLasers[i].rect)) {
+                printf("man down");
+                enemyLasers[i].x = 69000;
+                steve.hp -= enemyLasers[i].damage;
+            }
+        } 
+
+        if(steve.hp <= 0 && !godmode) {
+            GAMEOVER = 1;
+        }
+
         // clears the screen
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, &steve.rect);
@@ -380,9 +471,21 @@ int main(int argc, char *argv[])
         for(int i = 0; i < sizeof(playerLasers)/sizeof(playerLasers[0]); i++) {
             SDL_RenderCopy(renderer, laserTexture, NULL, &playerLasers[i].rect);
         }
-        for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
-            SDL_RenderCopy(renderer, rockTexture, NULL, &rocks[i].rect);
+
+        for(int i = 0; i < sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
+            SDL_RenderCopy(renderer, laserTexture, NULL, &enemyLasers[i].rect);
         }
+        /*for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
+            SDL_RenderCopy(renderer, rockTexture, NULL, &rocks[i].rect);
+        }*/
+        for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
+            for(int r = 0; r<sizeof(rocks[0])/sizeof(rocks[0][0]); r++) {
+                for(int c = 0; c< sizeof(rocks[0][0])/sizeof(rocks[0][0][0]); c++) {
+                    SDL_RenderCopy(renderer, rockTexture, NULL, &rocks[i][r][c].rect);
+                }
+            }
+        }
+
         // triggers the double buffers
         // for multiple rendering - dunno what this does tbh
         SDL_RenderPresent(renderer);
@@ -401,7 +504,6 @@ int main(int argc, char *argv[])
     
     //kills the lasers
     //free(playerLasers);
-    free(enemyLasers);
 
     // rectroy renderer
     SDL_DestroyRenderer(renderer);
@@ -509,6 +611,7 @@ void playerLaser(player* steve, laser playerLasers[100], size_t pLSize, SDL_Text
             //printf("%i", i);
             break;
         }
+
         if(playerLasers[i].refill) {
             //printf("refilled");
             playerLasers[i].rect.x = steve->rect.x + 25;
@@ -520,20 +623,56 @@ void playerLaser(player* steve, laser playerLasers[100], size_t pLSize, SDL_Text
     }
 }
 
-void enemyLaser(laser* x, enemy* bad) {
-    if(bad->type = 0) {
-        x->velocity = 1;
-        x->damage = 20;
-    }
-    else if (bad->type = 1){
-        x->velocity = 0.75;
-        x->damage = 35;
-    }
-    else if (bad->type = 2){
-        x->velocity = 0.5;
-        x->damage = 65;
-    }
+void enemyLaser(enemy* bad, laser enemyLasers[500], size_t eLSize, SDL_Texture* laserTexture) {
+    
+    for(int i = 0; i < 500; i++) {
+        if(i == 499) {
+            for(int j = 0; j < eLSize/sizeof(enemyLasers[0]); j++) {
+                enemyLasers[j].refill = 1;
+                //printf("there has been an enemy refill");
+            }
+        }
 
+        if(enemyLasers[i].rect.x == 69000) {
+            //printf("it's null");
+            //printf("%i", steve->rect.x);
+            enemyLasers[i].rect.x = bad->rect.x + 25;
+            enemyLasers[i].rect.y = bad->rect.y - 5;
+            if(bad->type = 0) {
+                enemyLasers[i].velocity = 1;
+                enemyLasers[i].damage = 20;
+            }
+            else if (bad->type = 1){
+                enemyLasers[i].velocity = 0.75;
+                enemyLasers[i].damage = 35;
+            }
+            else if (bad->type = 2){
+                enemyLasers[i].velocity = 0.5;
+                enemyLasers[i].damage = 65;
+            }
+            break;
+        }
+
+        if(enemyLasers[i].refill) {
+            printf("refilled");
+            enemyLasers[i].rect.x = enemyLasers->rect.x + 25;
+            enemyLasers[i].rect.y = enemyLasers->rect.y - 5;
+            if(bad->type = 0) {
+                enemyLasers[i].velocity = 1;
+                enemyLasers[i].damage = 20;
+            }
+            else if (bad->type = 1){
+                enemyLasers[i].velocity = 0.75;
+                enemyLasers[i].damage = 35;
+            }
+            else if (bad->type = 2){
+                enemyLasers[i].velocity = 0.5;
+                enemyLasers[i].damage = 65;
+            }
+            enemyLasers[i].refill = 0;
+            break;
+        }
+    }
 }
 
 void destroyEnemy(enemy* x) {
