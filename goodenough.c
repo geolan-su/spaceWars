@@ -437,7 +437,22 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-        }       
+        } 
+
+        for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
+            for(int r = 0; r<sizeof(rocks[0])/sizeof(rocks[0][0]); r++) {
+                for(int c = 0; c< sizeof(rocks[0][0])/sizeof(rocks[0][0][0]); c++) {
+                    for(int j = 0; j < sizeof(enemyLasers)/sizeof(enemyLasers[0]); j++) {
+
+                        if(SDL_HasIntersection(&rocks[i][r][c].rect, &enemyLasers[j].rect)) {
+                            enemyLasers[j].rect.x = 69000;
+                            rocks[i][r][c].rect.x = 69000;
+                        }
+
+                    }
+                }
+            }
+        }           
         for(int i = 0; i<sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
             if(SDL_HasIntersection(&steve.rect, &enemyLasers[i].rect)) {
                 printf("man down");
