@@ -17,10 +17,11 @@ const int PLAYER_H;
 
 int waveDirection = 0;
 int GAMEOVER = 0;
-int godmode = 1;
+int godmode = 0;
 int frame = 0;
 int delay = 0;
 int enemyDelay = 0;
+int cheats = 1;
 
 //makes the player ship
 typedef struct {
@@ -59,14 +60,14 @@ typedef struct {
 
 typedef struct {
     int x, y;
-    int velocity;
+    double velocity;
     int damage;
     SDL_Rect rect;
     int refill;
 } laser;
 
 void intitializePlayer(player* x);
-void initializeWave(wave w);
+void reinitializeWave(wave* w);
 void initializeEnemy(enemy* e, int type);
 int detectColision(SDL_Rect a, SDL_Rect b);
 void playerLaser(player* steve, laser playerLasers[], size_t pLSize ,SDL_Texture* laserTexture);
@@ -74,6 +75,7 @@ void enemyLaser(enemy* bad, laser enemyLasers[500], size_t eLSize, SDL_Texture* 
 void manageBounds(SDL_Rect* r);
 void destroyEnemy(enemy* x);
 void shiftWaveDown(wave* w);
+void killWave(wave* w);
 
 int main(int argc, char *argv[])
 {
@@ -131,7 +133,7 @@ int main(int argc, char *argv[])
     steve.rectSpeed = speed * steve.velocity;
     //enemy wave[5][10];
     wave w;
-    initializeWave(w);
+    w.cleared = 0;
 
     //initializes bullets
     //laser* playerLasers = malloc(100 * sizeof(laser));
@@ -296,8 +298,13 @@ int main(int argc, char *argv[])
                         }
                         //printf("%i", playerLasers[0].rect.x);
                         break;
-
-                }
+                    
+                    }
+                    case SDL_SCANCODE_P: {
+                        if(cheats) {
+                            killWave(&w);
+                        }
+                    }
                     default:
                         break;
                 }
@@ -316,8 +323,15 @@ int main(int argc, char *argv[])
         
 
         if(!enemyDelay) {
-            int x = rand() % (sizeof(w.enemies)/sizeof(w.enemies[0]));
-            int y = rand() % (sizeof(w.enemies[0])/sizeof(w.enemies[0][0]));
+            int exists = 0;
+            int x, y;
+            while(!exists) {
+                x = rand() % (sizeof(w.enemies)/sizeof(w.enemies[0]));
+                y = rand() % (sizeof(w.enemies[0])/sizeof(w.enemies[0][0]));
+                if (!w.enemies[x][y].dead) {
+                    exists = 1;
+                }
+            }
             enemyLaser(&w.enemies[x][y], enemyLasers, sizeof(enemyLasers), laserTexture);
             enemyDelay = 1;
         }
@@ -344,6 +358,8 @@ int main(int argc, char *argv[])
  
             return 0;
         }
+
+        
 
 
         //bro make a bounds function
@@ -395,10 +411,12 @@ int main(int argc, char *argv[])
         }
         //make enemy lasers go down
         for(int i = 0; i < sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
-            enemyLasers[i].rect.y += 3;
-            //printf("%d", enemyLasers[i].velocity);
+            enemyLasers[i].rect.y += 3 * enemyLasers[i].velocity;
+            if(enemyLasers[i].velocity != 1) {
+                printf("%f\n", enemyLasers[i].velocity);
+            }
         }
-
+        int numDead = 0;
         for(int r = 0; r < sizeof(w.enemies)/sizeof(w.enemies[0]); r++) {
             for(int c = 0; c < sizeof(w.enemies[0])/sizeof(w.enemies[0][0]); c++) {
                 for(int z = 0; z < sizeof(playerLasers)/sizeof(playerLasers[0]); z++) {
@@ -421,7 +439,18 @@ int main(int argc, char *argv[])
                             w.enemies[r][c].dead = 1;
                         }
                 }
+                if(w.enemies[r][c].dead) {
+                    numDead++;
+                }
+                if(numDead == 50) {
+                    w.cleared = 1;
+                }
             }
+        }
+
+        if(w.cleared) {
+            //printf("cleared");
+            reinitializeWave(&w);
         }
 
         for(int i = 0; i < sizeof(rocks)/sizeof(rocks[0]); i++) {
@@ -455,7 +484,7 @@ int main(int argc, char *argv[])
         }           
         for(int i = 0; i<sizeof(enemyLasers)/sizeof(enemyLasers[0]); i++) {
             if(SDL_HasIntersection(&steve.rect, &enemyLasers[i].rect)) {
-                printf("man down");
+                //printf("man down");
                 enemyLasers[i].x = 69000;
                 steve.hp -= enemyLasers[i].damage;
             }
@@ -595,8 +624,39 @@ void initializeEnemy(enemy* x, int type) {
     }
 }
 
-void initializeWave(wave w) {
-    w.cleared = 0;
+void reinitializeWave(wave* w) {
+    w->cleared = 0;
+    int yPos = 10;
+    int xPos = 50;
+    for(int r = 0; r < sizeof(w->enemies)/sizeof(w->enemies[0]); r++) {
+        for(int c = 0; c < sizeof(w->enemies[0])/sizeof(w->enemies[0][0]); c++) {
+            switch(w->enemies[r][c].type) {
+                case 0:
+                    w->enemies[r][c].hp = ALIEN_ONE_HP;
+                case 1:
+                    w->enemies[r][c].hp = ALIEN_TWO_HP;
+                case 2: 
+                    w->enemies[r][c].hp = ALIEN_THREE_HP;
+                 
+            }
+            w->enemies[r][c].dead = 0;
+            w->enemies[r][c].rect.x = (1024 - w->enemies[r][c].rect.w) * 1 / 20 + xPos;
+ 
+                // sets initial y-position
+            w->enemies[r][c].rect.y = (768 - w->enemies[r][c].rect.h) * 1 / 20 + yPos;
+            xPos += 80;
+        } 
+        xPos = 50;
+        yPos += 60;
+    }       
+}
+
+void killWave(wave* w) {
+    for(int r = 0; r < sizeof(w->enemies)/sizeof(w->enemies[0]); r++) {
+        for(int c = 0; c < sizeof(w->enemies[0])/sizeof(w->enemies[0][0]); c++) {
+            w->enemies[r][c].dead = 1;
+        } 
+    }  
 }
 
 void manageBounds(SDL_Rect* r) {
@@ -654,15 +714,15 @@ void enemyLaser(enemy* bad, laser enemyLasers[500], size_t eLSize, SDL_Texture* 
             enemyLasers[i].rect.x = bad->rect.x + 25;
             enemyLasers[i].rect.y = bad->rect.y - 5;
             if(bad->type = 0) {
-                enemyLasers[i].velocity = 1;
+                enemyLasers[i].velocity = 3;
                 enemyLasers[i].damage = 20;
             }
             else if (bad->type = 1){
-                enemyLasers[i].velocity = 0.75;
+                enemyLasers[i].velocity = 1;
                 enemyLasers[i].damage = 35;
             }
             else if (bad->type = 2){
-                enemyLasers[i].velocity = 0.5;
+                enemyLasers[i].velocity = .75;
                 enemyLasers[i].damage = 65;
             }
             break;
@@ -673,15 +733,15 @@ void enemyLaser(enemy* bad, laser enemyLasers[500], size_t eLSize, SDL_Texture* 
             enemyLasers[i].rect.x = enemyLasers->rect.x + 25;
             enemyLasers[i].rect.y = enemyLasers->rect.y - 5;
             if(bad->type = 0) {
-                enemyLasers[i].velocity = 1;
+                enemyLasers[i].velocity = 3;
                 enemyLasers[i].damage = 20;
             }
             else if (bad->type = 1){
-                enemyLasers[i].velocity = 0.75;
+                enemyLasers[i].velocity = 1.25;
                 enemyLasers[i].damage = 35;
             }
             else if (bad->type = 2){
-                enemyLasers[i].velocity = 0.5;
+                enemyLasers[i].velocity = .75;
                 enemyLasers[i].damage = 65;
             }
             enemyLasers[i].refill = 0;
