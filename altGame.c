@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     SDL_Surface* surface;
  
     //${workspaceFolder}/assets/Untitled
-    surface = IMG_Load("OBAMA.png");
+    surface = IMG_Load("spaceship.png");
  
     // loads image
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
