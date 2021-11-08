@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     SDL_Surface* surface;
  
     //${workspaceFolder}/assets/Untitled
-    surface = IMG_Load("spaceship.png");
+    surface = IMG_Load("OBAMA.png");
  
     // loads image
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -143,9 +143,9 @@ int main(int argc, char *argv[])
     laser enemyLasers[500];
     rock rocks[3][8][8];
 
-    SDL_Surface* A1surface = IMG_Load("alien.png");
-    SDL_Surface* A2surface = IMG_Load("alien2.png");
-    SDL_Surface* A3surface = IMG_Load("alien3.png");
+    SDL_Surface* A1surface = IMG_Load("reagan.png");
+    SDL_Surface* A2surface = IMG_Load("immigrant.png");
+    SDL_Surface* A3surface = IMG_Load("immigrantKid.png");
     SDL_Surface* laserSurface = IMG_Load("laser.png");
     SDL_Surface* rockSurface = IMG_Load("rock.png");
 
