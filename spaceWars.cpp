@@ -4,6 +4,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include <SDL2/SDL_ttf.h>
+#include <iostream>
+
+using namespace std;
 
 //const SHIP_HEIGHT =;
 //const SHIP_WIDTH =;
@@ -13,8 +16,8 @@ const int PLAYER_HP = 100;
 const int ALIEN_ONE_HP = 10;
 const int ALIEN_TWO_HP = 20;
 const int ALIEN_THREE_HP = 30;
-const int PLAYER_W;
-const int PLAYER_H;
+//const int PLAYER_W;
+//const int PLAYER_H;
 
 int waveDirection = 0;
 int GAMEOVER = 0;
